@@ -1,0 +1,17 @@
+[project]
+name = "cc-coder"
+version = "0.1.0"
+description = "Synthetic multi-entity credit-card expense coding bot (portfolio demo)"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Portfolio demo" }]
+
+[project.scripts]
+cc-coder = "cc_coder.pipeline:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["cc_coder*"]

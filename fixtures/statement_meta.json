@@ -1,0 +1,6 @@
+{
+  "period": "2026-03",
+  "reported_activity": 1055000,
+  "currency": "USD",
+  "notes": "Issuer-reported period activity still includes the online-payment thank-you row. The bot drops those rows and reports variance instead of forcing a match."
+}
