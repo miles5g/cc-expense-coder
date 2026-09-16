@@ -4,10 +4,13 @@
 
 ```bash
 python3 -m cc_coder
+python3 -m cc_coder --walkthrough
 python3 -m unittest
 ```
 
-Windows: `py -3 -m cc_coder` then `py -3 -m unittest`.
+Windows: `py -3 -m cc_coder` then `py -3 -m unittest`. Interview mode is `py -3 -m cc_coder --walkthrough`.
+
+Default is the fast 30-second run (one-line stage labels, no pauses). `--walkthrough` (`-w`) prints boxed stage notes and waits for Enter after each; add `--no-pause` for CI or non-interactive runs (`python3 -m cc_coder --walkthrough --no-pause`).
 
 You should see three `[OK]` journals (Wayne / Daily Bugle / Stark) and `wrote output/`. Open `output/journals/` and `output/reconciliation.md` — variance is reported, not forced.
 
