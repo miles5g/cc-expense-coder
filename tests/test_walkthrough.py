@@ -47,9 +47,9 @@ class WalkthroughTests(unittest.TestCase):
         box = render_box(
             "Step 2/5 · SPLIT",
             (
-                "What you're seeing: Origin stays intact; each entity sheet "
-                "gets its charges. Variance is reported, never forced.",
-                'Say in interview: "I keep the control file…"',
+                "What you're seeing: Original file stays put. Split by "
+                "entity. I don't force the totals.",
+                'Say in interview: "I leave the original alone."',
             ),
         )
         lines = box.splitlines()
@@ -71,8 +71,14 @@ class WalkthroughTests(unittest.TestCase):
         self.assertTrue(wrote_recon)
         self.assertEqual(journal_count, 3)
         self.assertIn("┌─ Interview walkthrough ", text)
-        self.assertIn("synthetic", text.lower())
-        self.assertIn("Not production", text)
+        self.assertIn("comic-book names", text)
+        self.assertIn("Dummy GLs", text)
+        self.assertIn("Not a real client file", text)
+        self.assertIn("All fake data.", text)
+        self.assertIn("I leave the original alone.", text)
+        self.assertIn("I'm not guessing GL codes.", text)
+        self.assertIn("Each entity journal balances.", text)
+        self.assertNotIn("I keep the control file", text)
         intro_lines = [
             line
             for line in render_box(INTRO_TITLE, INTRO_PARAS).splitlines()
