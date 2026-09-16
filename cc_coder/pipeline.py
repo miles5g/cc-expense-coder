@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 from cc_coder.clean import TXN_FIELDS, clean_statement
@@ -15,12 +16,56 @@ from cc_coder.models import PipelineResult, Transaction
 from cc_coder.reconcile import build_reconciliation, render_reconciliation_md
 from cc_coder.split import apply_entity_map, entity_slug, load_entity_map
 
+REQUIRED_FIXTURES = (
+    "raw_statement.csv",
+    "statement_meta.json",
+    "chart_of_accounts.csv",
+    "reference.csv",
+    "entity_map.csv",
+)
 
-def default_root() -> Path:
-    return Path.cwd()
+
+def repo_root() -> Path:
+    """Directory that contains `cc_coder/` and `fixtures/` in a clone."""
+    return Path(__file__).resolve().parent.parent
+
+
+def resolve_fixtures_dir(raw: str | Path) -> Path:
+    """Prefer the given path; if it's the default relative folder, fall back to the clone."""
+    path = Path(raw)
+    if path.is_dir():
+        return path
+    if not path.is_absolute():
+        bundled = repo_root() / path
+        if bundled.is_dir():
+            return bundled
+    return path
+
+
+def missing_fixture_names(fixtures_dir: Path) -> list[str]:
+    return [name for name in REQUIRED_FIXTURES if not (fixtures_dir / name).is_file()]
+
+
+def require_fixtures(fixtures_dir: Path) -> None:
+    if not fixtures_dir.is_dir():
+        raise FileNotFoundError(
+            f"fixtures directory not found: {fixtures_dir}\n"
+            "Run from the repo root (the folder that contains fixtures/), "
+            "or pass --fixtures PATH."
+        )
+    missing = missing_fixture_names(fixtures_dir)
+    if missing:
+        listed = "\n".join(f"  - {name}" for name in missing)
+        need = ", ".join(REQUIRED_FIXTURES)
+        raise FileNotFoundError(
+            f"fixtures directory is missing required files: {fixtures_dir}\n"
+            f"{listed}\n"
+            f"Need: {need}"
+        )
 
 
 def run_pipeline(fixtures_dir: Path, output_dir: Path) -> PipelineResult:
+    require_fixtures(fixtures_dir)
     raw = read_dicts(fixtures_dir / "raw_statement.csv")
     meta = read_json(fixtures_dir / "statement_meta.json")
     coa = load_coa(read_dicts(fixtures_dir / "chart_of_accounts.csv"))
@@ -32,8 +77,9 @@ def run_pipeline(fixtures_dir: Path, output_dir: Path) -> PipelineResult:
         raise ValueError("dummy COA must include a Card Payable account")
 
     cleaned, dropped = clean_statement(raw)
-    origin = [row for row in cleaned]  # Origin copy — split never deletes it
-    tagged, by_entity, unmapped = apply_entity_map(origin, mapping)
+    # Snapshot before split/code mutate the working rows. Origin is kept, never deleted.
+    origin = [replace(row) for row in cleaned]
+    tagged, by_entity, unmapped = apply_entity_map(cleaned, mapping)
     code_transactions(tagged, reference, coa)
     approved, review = partition_review(tagged)
     reference_updated = update_reference(reference, approved)
@@ -138,7 +184,7 @@ def _run_summary(result: PipelineResult) -> dict:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="python -m cc_coder",
+        prog="python3 -m cc_coder",
         description=(
             "Run the synthetic multi-entity credit-card coding pipeline "
             "(clean → split → code → finalize → journal)."
@@ -147,7 +193,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--fixtures",
         default="fixtures",
-        help="Directory with raw_statement.csv, COA, reference, entity map, meta",
+        help="Directory with raw_statement.csv, COA, reference, entity map, meta "
+        "(cwd, then repo root)",
     )
     parser.add_argument(
         "--output",
@@ -158,13 +205,23 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
-    fixtures_dir = Path(args.fixtures)
-    output_dir = Path(args.output)
-    if not fixtures_dir.is_dir():
-        print(f"fixtures directory not found: {fixtures_dir}", file=sys.stderr)
+    if sys.version_info < (3, 10):
+        print(
+            "Python 3.10+ is required (stdlib only — no pip install).",
+            file=sys.stderr,
+        )
         return 2
-    result = run_pipeline(fixtures_dir, output_dir)
+    args = build_parser().parse_args(argv)
+    fixtures_dir = resolve_fixtures_dir(args.fixtures)
+    output_dir = Path(args.output)
+    try:
+        result = run_pipeline(fixtures_dir, output_dir)
+    except FileNotFoundError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     rec = result.reconciliation
     print("CC Expense Coder — synthetic portfolio run")
     print(f"  cleaned rows:     {len(result.cleaned)}  (origin kept: {len(result.origin)})")
@@ -174,11 +231,15 @@ def main(argv: list[str] | None = None) -> int:
     print(f"  cleaned activity: {rec.cleaned_activity}")
     print(f"  variance:         {rec.variance_vs_statement}  (not forced)")
     print("  journals:")
+    broken = False
     for entity, journal in sorted(result.journals.items()):
         flag = "OK" if journal.balanced else "BROKEN"
+        broken = broken or not journal.balanced
         print(
             f"    {entity}: debit={journal.debit_total} "
             f"credit={journal.credit_total} [{flag}]"
         )
     print(f"  wrote {output_dir}/")
-    return 0
+    print(f"    journals:        {output_dir / 'journals'}/")
+    print(f"    reconciliation:  {output_dir / 'reconciliation.md'}")
+    return 1 if broken else 0

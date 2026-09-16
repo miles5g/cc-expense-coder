@@ -1,10 +1,18 @@
 import json
+import os
 import tempfile
 import unittest
+from io import StringIO
 from pathlib import Path
+from unittest.mock import patch
 
 from cc_coder.io_csv import read_dicts
-from cc_coder.pipeline import run_pipeline
+from cc_coder.pipeline import (
+    REQUIRED_FIXTURES,
+    main,
+    resolve_fixtures_dir,
+    run_pipeline,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -33,6 +41,16 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(len(origin), len(cleaned))
         self.assertEqual(len(origin), len(self.result.cleaned))
         self.assertGreater(len(origin), 0)
+        self.assertEqual(
+            [row["txn_id"] for row in origin],
+            [row["txn_id"] for row in cleaned],
+        )
+        # Origin is a pre-split snapshot: same rows, not mutated by split/coding.
+        self.assertTrue(all(not row["entity"] for row in origin))
+        self.assertTrue(all(not row["gl_code"] for row in origin))
+        self.assertTrue(any(row["entity"] for row in cleaned))
+        self.assertTrue(any(row["gl_code"] for row in cleaned))
+        self.assertIsNot(self.result.origin[0], self.result.cleaned[0])
 
     def test_split_does_not_lose_rows(self):
         split_rows = 0
@@ -95,6 +113,44 @@ class PipelineTests(unittest.TestCase):
     def test_amounts_are_whole_dollars(self):
         for txn in self.result.cleaned + self.result.dropped_payments:
             self.assertIsInstance(txn.amount, int)
+
+
+class CliUxTests(unittest.TestCase):
+    def test_missing_fixtures_dir_is_a_clear_error(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            missing = str(Path(tmp) / "no-such-fixtures")
+            stderr = StringIO()
+            with patch("sys.stderr", stderr):
+                code = main(["--fixtures", missing, "--output", str(Path(tmp) / "out")])
+            self.assertEqual(code, 2)
+            text = stderr.getvalue()
+            self.assertIn("fixtures directory not found", text)
+            self.assertIn("repo root", text)
+            self.assertNotIn("Traceback", text)
+
+    def test_empty_fixtures_dir_lists_required_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            empty = Path(tmp) / "fixtures"
+            empty.mkdir()
+            stderr = StringIO()
+            with patch("sys.stderr", stderr):
+                code = main(["--fixtures", str(empty), "--output", str(Path(tmp) / "out")])
+            self.assertEqual(code, 2)
+            text = stderr.getvalue()
+            self.assertIn("missing required files", text)
+            for name in REQUIRED_FIXTURES:
+                self.assertIn(name, text)
+            self.assertNotIn("Traceback", text)
+
+    def test_default_fixtures_fall_back_to_repo_when_cwd_has_none(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            prev = os.getcwd()
+            os.chdir(tmp)
+            try:
+                resolved = resolve_fixtures_dir("fixtures")
+            finally:
+                os.chdir(prev)
+        self.assertEqual(resolved.resolve(), (ROOT / "fixtures").resolve())
 
 
 if __name__ == "__main__":
