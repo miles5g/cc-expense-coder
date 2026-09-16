@@ -27,48 +27,39 @@ class StageNote:
 STAGE_NOTES: dict[str, StageNote] = {
     "CLEAN": StageNote(
         name="CLEAN",
-        seeing=(
-            "Payments drop out; merchants normalize. Origin is the cleaned "
-            "control copy."
-        ),
-        say='"I keep Origin intact."',
+        seeing="Thank-you payments drop. Names clean up.",
+        say='"I leave the original alone."',
     ),
     "SPLIT": StageNote(
         name="SPLIT",
         seeing=(
-            "Origin stays intact; each entity sheet gets its charges. "
-            "Variance is reported, never forced."
+            "Original file stays put. Split by entity. "
+            "I don't force the totals."
         ),
-        say='"I keep the control file…"',
+        say='"I leave the original alone."',
     ),
     "CODE": StageNote(
         name="CODE",
-        seeing=(
-            "Reference first, then COA. Unknown merchants go to review — "
-            "no invented GLs."
-        ),
-        say='"I never guess an account."',
+        seeing="Past codes, then the chart. Unknown stuff goes to review.",
+        say='"I\'m not guessing GL codes."',
     ),
     "FINALIZE": StageNote(
         name="FINALIZE",
-        seeing="Approved codes bump times_seen. Review rows do not rewrite memory.",
-        say='"Only confident hits stick."',
+        seeing="Good matches bump the count. Review rows don't change the list.",
+        say='"I only keep the sure ones."',
     ),
     "JOURNAL": StageNote(
         name="JOURNAL",
-        seeing=(
-            "Per-entity journals plus Card Payable. Debits equal credits; "
-            "review stays out."
-        ),
-        say='"Each journal balances."',
+        seeing="Journals per entity, plus Card Payable. Review stays out.",
+        say='"Each entity journal balances."',
     ),
 }
 
 INTRO_TITLE = "Interview walkthrough"
 INTRO_PARAS = (
-    "Synthetic comic-book names, dummy 4-digit GLs, round dollars. "
-    "Not production. Not an employer file.",
-    'Say in interview: "This is synthetic data."',
+    "Fake comic-book names. Dummy GLs.",
+    "Not a real client file.",
+    'Say in interview: "All fake data."',
 )
 
 
