@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from cc_coder.journal import build_journals, journal_fieldnames
 from cc_coder.models import PipelineResult, Transaction
 from cc_coder.reconcile import build_reconciliation, render_reconciliation_md
 from cc_coder.split import apply_entity_map, entity_slug, load_entity_map
+from cc_coder.walkthrough import Narrator
 
 REQUIRED_FIXTURES = (
     "raw_statement.csv",
@@ -64,7 +66,12 @@ def require_fixtures(fixtures_dir: Path) -> None:
         )
 
 
-def run_pipeline(fixtures_dir: Path, output_dir: Path) -> PipelineResult:
+def run_pipeline(
+    fixtures_dir: Path,
+    output_dir: Path,
+    *,
+    on_stage: Callable[[str], None] | None = None,
+) -> PipelineResult:
     require_fixtures(fixtures_dir)
     raw = read_dicts(fixtures_dir / "raw_statement.csv")
     meta = read_json(fixtures_dir / "statement_meta.json")
@@ -76,13 +83,22 @@ def run_pipeline(fixtures_dir: Path, output_dir: Path) -> PipelineResult:
     if not payable:
         raise ValueError("dummy COA must include a Card Payable account")
 
+    def stage(name: str) -> None:
+        if on_stage is not None:
+            on_stage(name)
+
+    stage("CLEAN")
     cleaned, dropped = clean_statement(raw)
     # Snapshot before split/code mutate the working rows. Origin is kept, never deleted.
+    stage("SPLIT")
     origin = [replace(row) for row in cleaned]
     tagged, by_entity, unmapped = apply_entity_map(cleaned, mapping)
+    stage("CODE")
     code_transactions(tagged, reference, coa)
     approved, review = partition_review(tagged)
+    stage("FINALIZE")
     reference_updated = update_reference(reference, approved)
+    stage("JOURNAL")
     journals = build_journals(by_entity, payable)
 
     extra_notes: list[str] = []
@@ -187,7 +203,9 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python3 -m cc_coder",
         description=(
             "Run the synthetic multi-entity credit-card coding pipeline "
-            "(clean → split → code → finalize → journal)."
+            "(clean → split → code → finalize → journal). "
+            "Default is the fast 30-second demo. "
+            "Use --walkthrough for interview stage notes."
         ),
     )
     parser.add_argument(
@@ -200,6 +218,18 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         default="output",
         help="Directory to write journals, Origin, splits, and reconciliation",
+    )
+    parser.add_argument(
+        "-w",
+        "--walkthrough",
+        action="store_true",
+        help="Interview mode: boxed stage notes, pausing for Enter after each",
+    )
+    parser.add_argument(
+        "--no-pause",
+        action="store_true",
+        help="With --walkthrough, print banners without waiting for Enter "
+        "(CI / non-interactive)",
     )
     return parser
 
@@ -215,7 +245,20 @@ def main(argv: list[str] | None = None) -> int:
     fixtures_dir = resolve_fixtures_dir(args.fixtures)
     output_dir = Path(args.output)
     try:
-        result = run_pipeline(fixtures_dir, output_dir)
+        require_fixtures(fixtures_dir)
+    except FileNotFoundError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    narrator = Narrator(
+        walkthrough=args.walkthrough,
+        pause=bool(args.walkthrough and not args.no_pause),
+    )
+    if args.walkthrough:
+        narrator.intro()
+    else:
+        print("CC Expense Coder — synthetic portfolio run")
+    try:
+        result = run_pipeline(fixtures_dir, output_dir, on_stage=narrator.stage)
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -223,7 +266,8 @@ def main(argv: list[str] | None = None) -> int:
         print(str(exc), file=sys.stderr)
         return 2
     rec = result.reconciliation
-    print("CC Expense Coder — synthetic portfolio run")
+    if args.walkthrough:
+        print("CC Expense Coder — synthetic portfolio run")
     print(f"  cleaned rows:     {len(result.cleaned)}  (origin kept: {len(result.origin)})")
     print(f"  payments dropped: {len(result.dropped_payments)}")
     print(f"  coded / review:   {len(result.coded)} / {len(result.review)}")
