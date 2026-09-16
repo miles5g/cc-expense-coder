@@ -1,13 +1,15 @@
 # CC Expense Coder
 
-**30-second demo**
+**30-second demo** — Python 3.10+, stdlib only. No pip, no `.env`. Run from the repo root.
 
 ```bash
 python3 -m cc_coder
 python3 -m unittest
 ```
 
-Writes balanced per-entity journals + a reconciliation summary into `output/` from synthetic fixtures. Stdlib Python only — no install, no `.env`.
+Windows: `py -3 -m cc_coder` then `py -3 -m unittest`.
+
+You should see three `[OK]` journals (Wayne / Daily Bugle / Stark) and `wrote output/`. Open `output/journals/` and `output/reconciliation.md` — variance is reported, not forced.
 
 ---
 
