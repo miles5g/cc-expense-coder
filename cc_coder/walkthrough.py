@@ -1,4 +1,4 @@
-"""Interview walkthrough banners for the CLI demo.
+"""Walkthrough banners for the CLI demo.
 
 Boxed stage notes are opt-in (`--walkthrough`). The default path stays a
 fast, unattended 30-second run.
@@ -20,53 +20,50 @@ PAUSE_PROMPT = "Press Enter to continue… "
 @dataclass(frozen=True)
 class StageNote:
     name: str
-    seeing: str
-    say: str
+    summary: str
+    detail: str
 
 
 STAGE_NOTES: dict[str, StageNote] = {
     "CLEAN": StageNote(
         name="CLEAN",
-        seeing="Thank-you payments drop. Names clean up.",
-        say='"I leave the original alone."',
+        summary="Thank-you payments drop. Names clean up.",
+        detail="The original statement file stays put.",
     ),
     "SPLIT": StageNote(
         name="SPLIT",
-        seeing=(
-            "Original file stays put. Split by entity. "
-            "I don't force the totals."
-        ),
-        say='"I leave the original alone."',
+        summary="Split by entity. The original file stays put.",
+        detail="Totals are checked. Variance is not forced.",
     ),
     "CODE": StageNote(
         name="CODE",
-        seeing="Past codes, then the chart. Unknown stuff goes to review.",
-        say='"I\'m not guessing GL codes."',
+        summary="Past codes first, then the chart of accounts.",
+        detail="Unknown rows go to review. No guessed GLs.",
     ),
     "FINALIZE": StageNote(
         name="FINALIZE",
-        seeing="Good matches bump the count. Review rows don't change the list.",
-        say='"I only keep the sure ones."',
+        summary="Good matches bump the reference count.",
+        detail="Review rows do not change the list.",
     ),
     "JOURNAL": StageNote(
         name="JOURNAL",
-        seeing="Journals per entity, plus Card Payable. Review stays out.",
-        say='"Each entity journal balances."',
+        summary="One journal per entity, plus Card Payable.",
+        detail="Review stays out. Each journal balances.",
     ),
 }
 
-INTRO_TITLE = "Interview walkthrough"
+INTRO_TITLE = "Walkthrough"
 INTRO_PARAS = (
     "Fake comic-book names. Dummy GLs.",
     "Not a real client file.",
-    'Say in interview: "All fake data."',
+    "All fake data.",
 )
 
 
 def render_box(
     title: str, paragraphs: Sequence[str], inner_width: int = INNER_WIDTH
 ) -> str:
-    """Unicode dialogue box. `inner_width` is the dash count on the bottom rule."""
+    """Unicode box. `inner_width` is the dash count on the bottom rule."""
     label = f"─ {title} "
     fill = inner_width - len(label)
     if fill < 1:
@@ -84,17 +81,11 @@ def render_box(
 
 def render_stage_box(index: int, total: int, note: StageNote) -> str:
     title = f"Step {index}/{total} · {note.name}"
-    return render_box(
-        title,
-        (
-            f"What you're seeing: {note.seeing}",
-            f"Say in interview: {note.say}",
-        ),
-    )
+    return render_box(title, (note.summary, note.detail))
 
 
 class Narrator:
-    """Prints stage labels (default) or boxed interview notes (walkthrough)."""
+    """Prints stage labels (default) or boxed walkthrough notes."""
 
     def __init__(
         self,
@@ -123,7 +114,7 @@ class Narrator:
                 index = STAGES.index(name) + 1
             except ValueError:
                 index = 0
-            note = STAGE_NOTES.get(name) or StageNote(name=name, seeing="", say="")
+            note = STAGE_NOTES.get(name) or StageNote(name=name, summary="", detail="")
             print(render_stage_box(index, self._total, note), file=self.out, flush=True)
             print(file=self.out, flush=True)
             self._wait()

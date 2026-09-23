@@ -205,7 +205,7 @@ def build_parser() -> argparse.ArgumentParser:
             "Run the synthetic multi-entity credit-card coding pipeline "
             "(clean → split → code → finalize → journal). "
             "Default is the fast 30-second demo. "
-            "Use --walkthrough for interview stage notes."
+            "Use --walkthrough for a step-by-step stage walkthrough."
         ),
     )
     parser.add_argument(
@@ -223,7 +223,7 @@ def build_parser() -> argparse.ArgumentParser:
         "-w",
         "--walkthrough",
         action="store_true",
-        help="Interview mode: boxed stage notes, pausing for Enter after each",
+        help="Step-by-step walkthrough: boxed stage notes, pausing for Enter after each",
     )
     parser.add_argument(
         "--no-pause",

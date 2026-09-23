@@ -8,11 +8,19 @@ python3 -m cc_coder --walkthrough
 python3 -m unittest
 ```
 
-Windows: `py -3 -m cc_coder` then `py -3 -m unittest`. Interview mode is `py -3 -m cc_coder --walkthrough`.
-
-Default is the fast 30-second run (one-line stage labels, no pauses). `--walkthrough` (`-w`) prints boxed stage notes and waits for Enter after each; add `--no-pause` for CI or non-interactive runs (`python3 -m cc_coder --walkthrough --no-pause`).
+Windows: `py -3 -m cc_coder` then `py -3 -m unittest`. Step-by-step walkthrough: `py -3 -m cc_coder --walkthrough`.
 
 You should see three `[OK]` journals (Wayne / Daily Bugle / Stark) and `wrote output/`. Open `output/journals/` and `output/reconciliation.md` — variance is reported, not forced.
+
+## Walkthrough
+
+Default is the fast 30-second run (one-line stage labels, no pauses). `--walkthrough` (`-w`) prints a boxed note for each stage and waits for Enter after each. Add `--no-pause` for CI or a non-interactive terminal (`python3 -m cc_coder --walkthrough --no-pause`).
+
+1. **Clean** — thank-you payments drop, and country and cardholder names get tidied. The raw file stays put.
+2. **Split** — rows group by entity. The statement total is checked; variance is reported, not forced.
+3. **Code** — Reference memory first, then the chart. Unknown or ambiguous rows go to review. No invented GL codes.
+4. **Finalize** — `times_seen` goes up only for rows that coded cleanly.
+5. **Journal** — one journal per entity, with a Card Payable line so debit equals credit. Review rows stay out.
 
 ---
 

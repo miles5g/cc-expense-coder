@@ -43,20 +43,20 @@ class WalkthroughTests(unittest.TestCase):
         self.assertTrue(args.walkthrough)
         self.assertTrue(args.no_pause)
 
-    def test_box_matches_dialogue_shape(self):
+    def test_box_matches_stage_shape(self):
         box = render_box(
             "Step 2/5 · SPLIT",
             (
-                "What you're seeing: Original file stays put. Split by "
-                "entity. I don't force the totals.",
-                'Say in interview: "I leave the original alone."',
+                "Split by entity. The original file stays put.",
+                "Totals are checked. Variance is not forced.",
             ),
         )
         lines = box.splitlines()
         self.assertTrue(lines[0].startswith("┌─ Step 2/5 · SPLIT "))
         self.assertTrue(lines[0].endswith("─"))
-        self.assertTrue(any(line.startswith("│ What you're seeing:") for line in lines))
-        self.assertTrue(any("Say in interview:" in line for line in lines))
+        self.assertTrue(any(line.startswith("│ Split by entity.") for line in lines))
+        self.assertTrue(any("Variance is not forced." in line for line in lines))
+        self.assertFalse(any("Say in interview:" in line for line in lines))
         self.assertTrue(lines[-1].startswith("└"))
         self.assertEqual(len(lines[0]), 1 + INNER_WIDTH)
         self.assertEqual(len(lines[-1]), 1 + INNER_WIDTH)
@@ -70,14 +70,14 @@ class WalkthroughTests(unittest.TestCase):
         self.assertEqual(err, "")
         self.assertTrue(wrote_recon)
         self.assertEqual(journal_count, 3)
-        self.assertIn("┌─ Interview walkthrough ", text)
+        self.assertIn("┌─ Walkthrough ", text)
         self.assertIn("comic-book names", text)
         self.assertIn("Dummy GLs", text)
         self.assertIn("Not a real client file", text)
         self.assertIn("All fake data.", text)
-        self.assertIn("I leave the original alone.", text)
-        self.assertIn("I'm not guessing GL codes.", text)
-        self.assertIn("Each entity journal balances.", text)
+        self.assertIn("The original statement file stays put.", text)
+        self.assertIn("No guessed GLs.", text)
+        self.assertIn("Each journal balances.", text)
         self.assertNotIn("I keep the control file", text)
         intro_lines = [
             line
@@ -92,8 +92,10 @@ class WalkthroughTests(unittest.TestCase):
             body_lines = [line for line in banner.splitlines() if line.startswith("│")]
             self.assertGreaterEqual(len(body_lines), 2, name)
             self.assertLessEqual(len(body_lines), 4, name)
-        self.assertIn("What you're seeing:", text)
-        self.assertIn("Say in interview:", text)
+        self.assertIn("Variance is not forced.", text)
+        self.assertNotIn("Say in interview", text)
+        self.assertNotIn("Interview walkthrough", text)
+        self.assertNotIn("Interview mode", text)
         self.assertIn("[OK]", text)
         self.assertNotIn("Press Enter to continue", text)
 
