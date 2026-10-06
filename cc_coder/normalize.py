@@ -1,4 +1,4 @@
-"""String and money normalizers. No issuer-specific parsers — generic patterns only."""
+"""String and money normalizers. No issuer-specific parsers: generic patterns only."""
 
 from __future__ import annotations
 

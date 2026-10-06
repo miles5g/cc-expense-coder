@@ -14,7 +14,7 @@ from typing import TextIO
 
 INNER_WIDTH = 50
 STAGES = ("CLEAN", "SPLIT", "CODE", "FINALIZE", "JOURNAL")
-PAUSE_PROMPT = "Press Enter to continue… "
+PAUSE_PROMPT = "Press Enter to continue... "
 
 
 @dataclass(frozen=True)

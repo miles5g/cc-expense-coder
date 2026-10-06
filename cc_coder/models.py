@@ -134,3 +134,4 @@ class PipelineResult:
     dropped_payments: list[Transaction]
     card_payable_gl: str
     unmapped: list[Transaction] = field(default_factory=list)
+    llm: Any = None

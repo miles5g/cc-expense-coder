@@ -63,7 +63,7 @@ class NoRealWorldLeakTests(unittest.TestCase):
         for line in rows:
             code = line.split(",", 1)[0]
             self.assertRegex(code, r"^\d{4}$")
-            self.assertTrue(code.startswith(("21", "51", "52", "53", "54", "55", "58")))
+            self.assertTrue(code.startswith(("21", "51", "52", "53", "54", "55", "56", "58")))
 
 
 if __name__ == "__main__":

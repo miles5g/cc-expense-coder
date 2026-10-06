@@ -1,4 +1,4 @@
-"""Orchestrate CLEAN → SPLIT → CODE → FINALIZE → JOURNAL."""
+"""Orchestrate CLEAN -> SPLIT -> CODE -> FINALIZE -> JOURNAL."""
 
 from __future__ import annotations
 
@@ -13,6 +13,7 @@ from cc_coder.code import code_transactions, load_coa, load_reference, partition
 from cc_coder.finalize import reference_as_rows, update_reference
 from cc_coder.io_csv import read_dicts, read_json, write_dicts, write_json
 from cc_coder.journal import build_journals, journal_fieldnames
+from cc_coder.llm import llm_available, suggest_for_review
 from cc_coder.models import PipelineResult, Transaction
 from cc_coder.reconcile import build_reconciliation, render_reconciliation_md
 from cc_coder.split import apply_entity_map, entity_slug, load_entity_map
@@ -71,6 +72,8 @@ def run_pipeline(
     output_dir: Path,
     *,
     on_stage: Callable[[str], None] | None = None,
+    use_llm: bool = False,
+    llm_caller: Callable[[str], str] | None = None,
 ) -> PipelineResult:
     require_fixtures(fixtures_dir)
     raw = read_dicts(fixtures_dir / "raw_statement.csv")
@@ -95,6 +98,10 @@ def run_pipeline(
     tagged, by_entity, unmapped = apply_entity_map(cleaned, mapping)
     stage("CODE")
     code_transactions(tagged, reference, coa)
+    llm_summary = None
+    if use_llm:
+        kwargs = {"caller": llm_caller} if llm_caller else {}
+        llm_summary = suggest_for_review(tagged, coa, reference, **kwargs)
     approved, review = partition_review(tagged)
     stage("FINALIZE")
     reference_updated = update_reference(reference, approved)
@@ -129,6 +136,7 @@ def run_pipeline(
         dropped_payments=dropped,
         card_payable_gl=payable,
         unmapped=unmapped,
+        llm=llm_summary,
     )
     write_outputs(output_dir, result)
     return result
@@ -203,7 +211,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="python3 -m cc_coder",
         description=(
             "Run the synthetic multi-entity credit-card coding pipeline "
-            "(clean → split → code → finalize → journal). "
+            "(clean -> split -> code -> finalize -> journal). "
             "Default is the fast 30-second demo. "
             "Use --walkthrough for a step-by-step stage walkthrough."
         ),
@@ -231,13 +239,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="With --walkthrough, print banners without waiting for Enter "
         "(CI / non-interactive)",
     )
+    parser.add_argument(
+        "--llm",
+        action="store_true",
+        help="Send rows the rules could not code to Claude (needs ANTHROPIC_API_KEY). "
+        "Claude can only pick GLs on the chart of accounts; low confidence stays in review.",
+    )
     return parser
 
 
 def main(argv: list[str] | None = None) -> int:
     if sys.version_info < (3, 10):
         print(
-            "Python 3.10+ is required (stdlib only — no pip install).",
+            "Python 3.10+ is required (stdlib only: no pip install).",
             file=sys.stderr,
         )
         return 2
@@ -253,12 +267,15 @@ def main(argv: list[str] | None = None) -> int:
         walkthrough=args.walkthrough,
         pause=bool(args.walkthrough and not args.no_pause),
     )
+    use_llm = bool(args.llm and llm_available())
     if args.walkthrough:
         narrator.intro()
     else:
-        print("CC Expense Coder — synthetic portfolio run")
+        print("CC Expense Coder: synthetic portfolio run")
+    if args.llm and not use_llm:
+        print("  LLM step skipped: set ANTHROPIC_API_KEY to enable. Running rules only.")
     try:
-        result = run_pipeline(fixtures_dir, output_dir, on_stage=narrator.stage)
+        result = run_pipeline(fixtures_dir, output_dir, on_stage=narrator.stage, use_llm=use_llm)
     except FileNotFoundError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -267,10 +284,15 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     rec = result.reconciliation
     if args.walkthrough:
-        print("CC Expense Coder — synthetic portfolio run")
+        print("CC Expense Coder: synthetic portfolio run")
     print(f"  cleaned rows:     {len(result.cleaned)}  (origin kept: {len(result.origin)})")
     print(f"  payments dropped: {len(result.dropped_payments)}")
     print(f"  coded / review:   {len(result.coded)} / {len(result.review)}")
+    if result.llm is not None:
+        print(
+            f"  LLM step:         {result.llm.coded} coded by Claude, "
+            f"{result.llm.still_review} left for human review"
+        )
     print(f"  reported:         {rec.reported_activity}")
     print(f"  cleaned activity: {rec.cleaned_activity}")
     print(f"  variance:         {rec.variance_vs_statement}  (not forced)")

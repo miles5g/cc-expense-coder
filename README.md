@@ -1,53 +1,10 @@
 # CC Expense Coder
 
-**30-second demo** — Python 3.10+, stdlib only. No pip, no `.env`. Run from the repo root.
+Turns a messy multi-person credit card statement into balanced, ready-to-import journal entries, one per entity.
 
-```bash
-python3 -m cc_coder
-python3 -m cc_coder --walkthrough
-python3 -m unittest
-```
+This is a rebuild of a month-end workflow I run at work, on fake data so it can be public.
 
-Windows: `py -3 -m cc_coder` then `py -3 -m unittest`. Step-by-step walkthrough: `py -3 -m cc_coder --walkthrough`.
-
-You should see three `[OK]` journals (Wayne / Daily Bugle / Stark) and `wrote output/`. Open `output/journals/` and `output/reconciliation.md` — variance is reported, not forced.
-
-## Walkthrough
-
-Default is the fast 30-second run (one-line stage labels, no pauses). `--walkthrough` (`-w`) prints a boxed note for each stage and waits for Enter after each. Add `--no-pause` for CI or a non-interactive terminal (`python3 -m cc_coder --walkthrough --no-pause`).
-
-1. **Clean** — thank-you payments drop, and country and cardholder names get tidied. The raw file stays put.
-2. **Split** — rows group by entity. The statement total is checked; variance is reported, not forced.
-3. **Code** — Reference memory first, then the chart. Unknown or ambiguous rows go to review. No invented GL codes.
-4. **Finalize** — `times_seen` goes up only for rows that coded cleanly.
-5. **Journal** — one journal per entity, with a Card Payable line so debit equals credit. Review rows stay out.
-
----
-
-**Portfolio demo** — multi-entity credit-card coding bot: clean → split → code → journal.
-
-Recruiter-safe recreation of a close-period *pattern* (messy statement → bookable journals). **Not** production software and **not** an employer artifact.
-
-## What it does
-
-1. **Clean** raw statement CSV (drop thank-you payments, normalize country, vendor-first details, first-name cardholders)
-2. **Split** by entity without deleting Origin; reconcile vs statement balance (reports variance, never force-matches)
-3. **Code** merchants via Reference memory, then COA — never invents GLs; flags review rows
-4. **Finalize** reference `times_seen` for approved rows
-5. **Journal** per entity: `GL Code / Debit / Credit / Description` + Card Payable balancer
-
-## Synthetic-data rules
-
-| | |
-| --- | --- |
-| People | Bruce Wayne, Peter Parker, Clark Kent, Diana Prince, Tony Stark |
-| Entities | Wayne Enterprises LLC, Daily Bugle Media LLC, Stark Industries Holdings |
-| Money | Whole round dollars only (`1000`, `5000`, `100000`, `1000000`) |
-| GLs | Dummy 4-digit chart only (`5100` Office Supplies … `2100` Card Payable) |
-
-No real emails, phones, clients, firm names, or employer SOP text.
-
-## Quickstart
+## Run it (30 seconds)
 
 ```bash
 git clone https://github.com/miles5g/cc-expense-coder.git
@@ -55,17 +12,49 @@ cd cc-expense-coder
 python3 -m cc_coder
 ```
 
-## Pipeline
+Python 3.10+. Nothing to install. On Windows use `py -m cc_coder`.
+
+Want each step explained as it runs? `python3 -m cc_coder --walkthrough`
+
+## What happens
+
+1. **Clean.** Drops card payments, standardizes names and countries.
+2. **Split.** Groups each charge under the right entity based on who spent it.
+3. **Code.** Assigns a GL account. Checks past coding first, then chart of accounts keywords. Anything unclear goes to a review queue instead of being guessed.
+4. **Learn.** Approved matches update the merchant memory, so next month codes faster.
+5. **Journal.** Writes one journal per entity. Debits equal credits. Review items stay out.
+
+## What you get
 
 ```
-raw statement CSV
-  → CLEAN → SPLIT → CODE → FINALIZE → JOURNAL → output/
+coded / review:   12 / 1
+journals:
+  Daily Bugle Media LLC: debit=13000 credit=13000 [OK]
+  Stark Industries Holdings: debit=125000 credit=125000 [OK]
+  Wayne Enterprises LLC: debit=22000 credit=22000 [OK]
 ```
 
-## Status
+Files land in `output/`. Start with `output/journals/` and `output/reconciliation.md`.
 
-Runnable. Tests cover journal balance, Origin kept, Reference-then-COA, and scrub guards.
+## Optional: Claude for the leftovers
 
-## Author
+Rows the rules cannot code (here, a $1M equipment rental) can go to Claude:
 
-Miles Johnson — [@miles5g](https://github.com/miles5g)
+```bash
+export ANTHROPIC_API_KEY=sk-ant-...
+python3 -m cc_coder --llm
+```
+
+Claude can only pick an account that exists on the chart. Answers under 0.8 confidence stay in review for a person. Without a key, the flag is skipped and the rules run alone.
+
+## Tests
+
+```bash
+python3 -m unittest discover -s tests
+```
+
+Covers balanced journals, no guessed accounts, the Claude guardrails, and a check that no real client or firm names are in the repo.
+
+## Data
+
+All fake: comic book names, round dollar amounts, a made-up chart of accounts.

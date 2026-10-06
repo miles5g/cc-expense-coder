@@ -114,7 +114,7 @@ class WalkthroughTests(unittest.TestCase):
         )
         self.assertEqual(code, 0)
         self.assertEqual(err, "")
-        self.assertIn("CC Expense Coder — synthetic portfolio run", text)
+        self.assertIn("CC Expense Coder: synthetic portfolio run", text)
         for name in STAGES:
             self.assertIn(f"  {name}", text)
         self.assertNotIn("┌", text)
