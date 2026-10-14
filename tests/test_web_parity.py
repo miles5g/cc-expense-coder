@@ -74,8 +74,15 @@ class WebParityTests(unittest.TestCase):
         )
         self.assertIn("Sample data only", text)
         self.assertIn("Comic-book names", text)
-        for banned in ("Powered by", "gradient", "Say in interview", "✨", "🚀"):
+        self.assertIn("public rebuild of the workflow pattern", text)
+        self.assertIn("was not deployed or used at any employer", text)
+        self.assertIn("A person approves or edits", text)
+        for banned in ("Powered by", "gradient", "Say in interview", "Claude", "LLM", "✨", "🚀"):
             self.assertNotIn(banned, text)
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        self.assertIn("public rebuild of the workflow pattern", readme)
+        self.assertIn("was not deployed or used at any employer", readme)
+        self.assertNotIn("at work", readme)
 
 
 if __name__ == "__main__":

@@ -251,16 +251,16 @@
     detail.replaceChildren();
 
     const reviewBlock = el("section", { className: "block" });
-    reviewBlock.appendChild(el("h2", { className: "block-title", text: "Needs a person" }));
+    reviewBlock.appendChild(el("h2", { className: "block-title", text: "Flagged for a person" }));
     if (!result.review.length) {
-      reviewBlock.appendChild(el("p", { className: "section-note", text: "Every charge has an account. Nothing is waiting." }));
+      reviewBlock.appendChild(el("p", { className: "section-note", text: "The tool did not flag any charges." }));
     } else {
       const waiting = result.review.length === 1
-        ? "1 charge has no account, so it is not on a journal."
-        : result.review.length + " charges have no account, so they are not on a journal.";
+        ? "The tool flagged 1 charge. A person approves or edits it before it is final."
+        : "The tool flagged " + result.review.length + " charges. A person approves or edits them before they are final.";
       reviewBlock.appendChild(el("p", {
         className: "section-note",
-        text: waiting + " Nothing was guessed.",
+        text: waiting,
       }));
       reviewBlock.appendChild(makeTable(
         [
@@ -287,7 +287,7 @@
 
     const journalBlock = el("section", { className: "block" });
     journalBlock.appendChild(el("h2", { className: "block-title", text: "Journals" }));
-    let journalNote = "Rows that need a person stay out of the journals. Company totals further down still include them.";
+    let journalNote = "Flagged rows stay out of the journals until a person approves or edits them. Company totals further down still include them.";
     if (result.unmapped.length) {
       const rows = result.unmapped.length === 1 ? "1 row has" : result.unmapped.length + " rows have";
       journalNote += " " + rows + " no company on the sample list, so " +
@@ -306,7 +306,7 @@
       block.appendChild(el("h3", { text: entity }));
       let balance = "Debits " + money(journal.debit_total) + ". Credits " + money(journal.credit_total) + ". Balanced.";
       if (journal.excluded_review_amount) {
-        balance += " " + money(journal.excluded_review_amount) + " is in review and is not in this journal.";
+        balance += " " + money(journal.excluded_review_amount) + " is flagged for a person and is not in this journal.";
       }
       block.appendChild(el("p", { className: "balance", text: balance }));
       block.appendChild(makeTable(
