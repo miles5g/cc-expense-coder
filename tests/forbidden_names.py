@@ -1,8 +1,18 @@
 """Denylist used by tests only. Production fixtures must not contain these strings."""
 
+
+def _from_codes(codes: tuple[int, ...]) -> str:
+    """Build a scan token from code points so the source has no readable name."""
+    return "".join(chr(code) for code in codes)
+
+
+# Generic token. The readable name is not stored in the repo.
+EMPLOYER_TOKEN = _from_codes((103, 117, 114, 115, 101, 121))
+
 # Accounting / advisory firm names and common expense-product fingerprints.
 # Word-boundary matching is applied by the test.
 FIRM_AND_PRODUCT = [
+    EMPLOYER_TOKEN,
     "Deloitte",
     "PricewaterhouseCoopers",
     "PwC",
