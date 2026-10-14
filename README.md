@@ -1,3 +1,5 @@
+**[Open the demo](https://miles5g.github.io/cc-expense-coder/)** — code a sample card statement in the browser and download the journals.
+
 # CC Expense Coder
 
 Turns a messy multi-person credit card statement into balanced, ready-to-import journal entries, one per entity.
