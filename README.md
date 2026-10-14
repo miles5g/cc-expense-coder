@@ -1,8 +1,10 @@
+**[Open the demo](https://miles5g.github.io/cc-expense-coder/)** — code a sample card statement in the browser and download the journals.
+
 # CC Expense Coder
 
 Turns a messy multi-person credit card statement into balanced, ready-to-import journal entries, one per entity.
 
-This is a rebuild of a month-end workflow I run at work, on fake data so it can be public.
+This is a public rebuild of the workflow pattern, on sample data. This GitHub version was not deployed or used at any employer.
 
 ## Run it (30 seconds)
 
@@ -20,9 +22,9 @@ Want each step explained as it runs? `python3 -m cc_coder --walkthrough`
 
 1. **Clean.** Drops card payments, standardizes names and countries.
 2. **Split.** Groups each charge under the right entity based on who spent it.
-3. **Code.** Assigns a GL account. Checks past coding first, then chart of accounts keywords. Anything unclear goes to a review queue instead of being guessed.
+3. **Code.** Assigns a GL account. Checks past coding first, then chart of accounts keywords. The tool flags anything unclear. A person approves or edits those rows before they are final.
 4. **Learn.** Approved matches update the merchant memory, so next month codes faster.
-5. **Journal.** Writes one journal per entity. Debits equal credits. Review items stay out.
+5. **Journal.** Writes one journal per entity. Debits equal credits. Flagged rows stay out until a person approves or edits them.
 
 ## What you get
 
@@ -45,7 +47,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 python3 -m cc_coder --llm
 ```
 
-Claude can only pick an account that exists on the chart. Answers under 0.8 confidence stay in review for a person. Without a key, the flag is skipped and the rules run alone.
+Claude can only pick an account that exists on the chart. Answers under 0.8 confidence stay flagged for a person. Without a key, the flag is skipped and the rules run alone. The browser page does not call Claude.
 
 ## Tests
 

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>CC Expense Coder</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%231f4e79'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <p class="product">CC Expense Coder</p>
+      <h1>Code a card statement</h1>
+      <p class="lede">Journals come out one company at a time.</p>
+      <p class="sample-note"><strong>Sample data only.</strong> This is a public rebuild of the workflow pattern, on sample data. Comic-book names and dummy account numbers. This GitHub version was not deployed or used at any employer.</p>
+      <p class="quiet">The coding runs in this browser. Nothing is uploaded.</p>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <noscript>
+      <p class="step-line">This page runs the coding in the browser and needs JavaScript turned on.</p>
+    </noscript>
+
+    <ol class="steps" aria-label="Progress">
+      <li id="crumb-load" class="is-current" aria-current="step"><span class="num">1</span> Statement</li>
+      <li id="crumb-run"><span class="num">2</span> Run</li>
+      <li id="crumb-results"><span class="num">3</span> Results</li>
+    </ol>
+
+    <section id="panel-load">
+      <h2 class="step-line" tabindex="-1">This loads the sample statement, or a CSV with the same columns.</h2>
+      <button id="load-sample" class="primary" type="button">Load sample statement</button>
+      <div class="upload">
+        <p class="label" id="upload-label">Upload a CSV instead</p>
+        <input id="statement-file" type="file" accept=".csv,text/csv" aria-labelledby="upload-label">
+        <p class="hint">Same columns as the sample: Cardholder Name, Transaction Date, Post Date, Description, Extended Details, Amount, Type, Country, Reference Number.</p>
+      </div>
+      <p id="load-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="panel-run" hidden>
+      <h2 class="step-line" tabindex="-1">This drops card payments, splits charges by company, and assigns an account.</h2>
+      <dl class="facts" id="loaded-facts"></dl>
+      <p id="run-note" class="hint"></p>
+      <div class="actions">
+        <button id="run-coding" class="primary" type="button">Run coding</button>
+      </div>
+      <p class="back-row"><button id="back-to-load" class="text" type="button">Choose a different statement</button></p>
+      <p id="run-error" class="error" role="alert" hidden></p>
+    </section>
+
+    <section id="panel-results" hidden>
+      <h2 class="step-line" tabindex="-1">This shows the journals. Download them if you want the files.</h2>
+      <div id="summary"></div>
+      <div class="actions">
+        <button id="download-all" class="primary" type="button">Download all files</button>
+        <p class="hint">The zip has the journal files, the review list, and the totals.</p>
+      </div>
+      <div id="detail"></div>
+      <p class="back-row"><button id="start-over" class="text" type="button">Start over</button></p>
+    </section>
+  </main>
+
+  <script src="pipeline.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
