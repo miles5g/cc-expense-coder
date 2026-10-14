@@ -77,6 +77,7 @@ class WebParityTests(unittest.TestCase):
         self.assertIn("public rebuild of the workflow pattern", text)
         self.assertIn("was not deployed or used at any employer", text)
         self.assertIn("A person approves or edits", text)
+        self.assertIn("Thank-you card payment dropped in cleaning. Not missing money.", text)
         for banned in ("Powered by", "gradient", "Say in interview", "Claude", "LLM", "✨", "🚀"):
             self.assertNotIn(banned, text)
         readme = (ROOT / "README.md").read_text(encoding="utf-8")

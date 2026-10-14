@@ -155,11 +155,28 @@
     return node;
   }
 
-  function stat(label, value) {
-    return el("div", null, [
+  function stat(label, value, caption) {
+    const parts = [
       el("p", { className: "label", text: label }),
       el("p", { className: "value", text: value }),
-    ]);
+    ];
+    if (caption) parts.push(el("p", { className: "caption", text: caption }));
+    return el("div", null, parts);
+  }
+
+  function differenceCaption(result) {
+    const rec = result.reconciliation;
+    let paymentSum = 0;
+    let thankYou = false;
+    for (let i = 0; i < result.droppedPayments.length; i++) {
+      const row = result.droppedPayments[i];
+      paymentSum += row.amount;
+      if (row.row_class === "PAYMENT" || /thank\s+you/i.test(row.description_raw || "")) thankYou = true;
+    }
+    if (thankYou && rec.variance_vs_statement !== 0 && rec.variance_vs_statement === -paymentSum) {
+      return "Thank-you card payment dropped in cleaning. Not missing money.";
+    }
+    return "Cleaned total minus the statement total. Not missing money.";
   }
 
   function makeTable(headers, records) {
@@ -244,7 +261,7 @@
         stat("Coded", String(result.coded.length)),
         stat("Needs review", String(result.review.length)),
         stat("Journals", String(journalCount)),
-        stat("Difference", money(rec.variance_vs_statement)),
+        stat("Difference", money(rec.variance_vs_statement), differenceCaption(result)),
       ])
     );
 

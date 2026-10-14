@@ -2,11 +2,11 @@ import re
 import unittest
 from pathlib import Path
 
-from tests.forbidden_names import ALLOWED_ENTITIES, ALLOWED_PEOPLE, FIRM_AND_PRODUCT
+from tests.forbidden_names import ALLOWED_ENTITIES, ALLOWED_PEOPLE, EMPLOYER_TOKEN, FIRM_AND_PRODUCT
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SCAN_DIRS = ("cc_coder", "fixtures")
+SCAN_DIRS = ("cc_coder", "fixtures", "docs")
 SCAN_FILES = ("README.md",)
 SKIP_SUFFIXES = {".pyc"}
 EMAIL_RE = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
@@ -57,6 +57,22 @@ class NoRealWorldLeakTests(unittest.TestCase):
         raw = (ROOT / "fixtures" / "raw_statement.csv").read_text(encoding="utf-8")
         for banned in ("@gmail.com", "@yahoo.com", "@outlook.com", "mailto:"):
             self.assertNotIn(banned, raw.lower())
+
+    def test_employer_token_is_not_written_out(self):
+        skip = {".git", "__pycache__", ".pyc", ".png", ".zip"}
+        leaks: list[str] = []
+        for path in ROOT.rglob("*"):
+            if not path.is_file():
+                continue
+            if any(part in skip for part in path.parts) or path.suffix in skip:
+                continue
+            try:
+                text = path.read_text(encoding="utf-8")
+            except (UnicodeDecodeError, OSError):
+                continue
+            if EMPLOYER_TOKEN in text.lower():
+                leaks.append(str(path.relative_to(ROOT)))
+        self.assertEqual(leaks, [])
 
     def test_gl_codes_are_dummy_four_digits(self):
         rows = (ROOT / "fixtures" / "chart_of_accounts.csv").read_text(encoding="utf-8").splitlines()[1:]
